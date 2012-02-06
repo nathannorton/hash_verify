@@ -1,3 +1,18 @@
 
+
 place holder 
 
+
+
+* create the mongo db
+    1. install mongodb 
+    2. set to start on reboot 
+	- el5/6 : chkconfig mongod on 
+	- f17+  : systemctl enable mongod.service
+	- ubuntu: 
+    3. start the mongo shell
+    4. use hash_verify
+    5. db.addUser("username", "password")
+	
+
+once the above is done you should be able to connect to the mongo instance
