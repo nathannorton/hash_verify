@@ -149,11 +149,11 @@ def find_files( config )
     config.each do |c|
         raise "Config error" unless  verify_config_dirs( c )
         dir = c["directory"].chomp("/")
-        rec = unyaml_rec( c["recursive"] ) 
+        rec = convert_yaml_bools( c["recursive"] ) 
     
     
         if File.directory? dir 
-            if rec.eql? "n"
+            if rec == false
                 Dir.glob( "#{dir}/*" ).each do |d|
                     files << d unless File.directory? d or File.symlink? d
                 end
@@ -171,96 +171,56 @@ def find_files( config )
     files
 end
 
-# This is here because in yaml if you have a string
-# "yes" or "YES" or "no" or "NO"
-# it will treat as a true or false which will then
-# get converted to a string of true or false
-# This method just normalises the value
 def clean_yaml( yaml )
   raise "Connection setting no in config" unless yaml['connection']
   raise "Auth section not in config " unless yaml['auth']
   raise "Either action not in config" unless yaml['do_hash'] or yaml['verify'] 
-
-  # fix y/nn true false issue
-  if yaml['do_hash'] 
-    yaml['do_hash'].each do |y|
-      y[p]
-    end
-  end
-  if yaml['verify']
-    
-  end
-
-#  pp yaml 
-    # yaml yes converts to true... argh!!
-    rec = "y" if rec == true
-    rec = "n" if rec == false
-
-    rec = "y" if rec == "true"
-    rec = "n" if rec == "false"
-
-    rec.downcase!
-
-    rec = "y" if rec.eql? "yes"
-    rec = "n" if rec.eql? "no"
-
-    return rec
 end
 
+# in yaml: "y" "Y" "n" "N" get converted to strings 
+# not boolsi. "yes" "no" however do get passed as  bools 
+def convert_yaml_bools( str ) 
+    str.downcase! if str.class == String
+
+    return true  if str.eql? "y"
+    return false if str.eql? "n"
+
+    str
+end
 
 
 # Check the config is using a relatively sane 
 # set of values that will not break the script.
 def verify_config_dirs( option )
-    dir = option['directory']
-    rec = option['recursive']
-    act = option['action']
+  dir = option['directory']
+  rec = option['recursive']
+  act = option['action']
 
-    rec = unyaml_rec( rec ) 
+  rec = convert_yaml_bools( rec ) 
 
-    # action stuff 
-    # TODO: fix up and make stronger... and actually do something...
-    valid_actions = ['delete','none','script']
-    unless act.nil?
-        raise "action is not valid" unless valid_actions.include? act
-    	@action = act
-    end
+  raise "Recursive field in config is not either \"y\" or \"n\"" unless rec.class == Bool
+  raise "You have specified a file that does not exist, exiting" unless File.file? dir or File.directory? dir
+  raise "You have selected recursive in the config, however you supplied a normal file, exiting" if rec and File.file? dir
 
-    unless rec.eql? "y" or rec.eql? "n"
-        raise "Recursive field in config is not either \"y\" or \"n\""
-    end
-    unless File.file? dir or File.directory? dir
-        raise "You have specified a file that does not exist, exiting" 
-    end 
-    
-    if rec.eql? "y" and File.file? dir
-        raise "You have selected recursive in the config, however you supplied a normal file, exiting"
-    end
+  valid_actions = ['delete','none','script']
+  unless act.nil?
+    raise "action is not valid" unless valid_actions.include? act
+    @action = act
+  end
 
-    if rec.eql? "n" and File.directory? dir
-        return true
-    end 
-
-    if rec.eql? "n" and File.file? dir 
-        return true
-    end
-
-    if rec.eql? "y" and File.directory? dir
-        return true
-    end 
-
-    raise "Invalid config file, plese check and try again"
+  return true if rec == false and File.directory? dir
+  return true if rec == false and File.file? dir 
+  return true if rec and File.directory? dir
+  raise "Invalid config file, plese check and try again"
 end
 
     
 def main() 
-  
   clean_yaml( CONFIG )
+  pp CONFIG
 
   # set up the db and make sure we can connect 
   setup_db( CONFIG['connection'], CONFIG['auth'] )
-
-   
 
   # generate lists of files we need to verify and or publish
   verify_files  = []
