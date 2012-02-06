@@ -19,28 +19,20 @@ require 'yaml'
 require "socket"
 require 'find'
 require 'fileutils'
-
-# Supress warning only for the import 
-# because we are not using bson_ext
-OLD_VERB = $VERBOSE
-$VERBOSE = nil
 require 'mongo'
 require 'bson'
-$VERBOSE = OLD_VERB
+
+require 'pp'
 
 
 # buffer for maximum size to chunk the hashing, in order to not 
 # kill my  machine by loading a many gig files into memory
 $BUF = 1024 * 1024 * 1024
 
-CONFIG = YAML.load_file("/etc/hashii.conf") unless defined? CONFIG
+CONFIG = YAML.load_file("/etc/hash_verify/hash_verify.conf") unless defined? CONFIG
 
-# set up the mongo DB connection
-def setup_db
-    @db = Mongo::Connection.new("mercury").db("hashii")
-    raise "failing!!!!"  unless @db.authenticate(@username,@password) 
-    @collection = @db.collection('hashes')
-end
+pp CONFIG
+
 
 
 # publish the hash to the web service
@@ -184,12 +176,23 @@ def unyaml_rec( rec )
     return rec
 end
 
-# check authentication data in config file
-def verify_config_auth( option )
-    option.each do |k|
-        @username = k['username'] unless k['username'].nil?
-        @password = k['password'] unless k['password'].nil?
-    end
+
+# set up the mongo DB connection, use defaults if 
+# the connection details in the config file are not set
+def setup_db( opts, auth ) 
+  port       = ( true && opts['port'] )       || 27017
+  server     = ( true && opts['server'] )     || 'localhost'
+  database   = ( true && opts['database'] )   || 'hash_verify'
+  collection = ( true && opts['collection'] ) || 'hashes'
+
+  username   = auth['username']
+  password   = auth['password']
+  
+  db = Mongo::Connection.new( server, port ).db( database )
+  raise "Failed to authenticate against the db" \
+    unless db.authenticate(username,password) 
+
+  @collection = db.collection( collection )
 end
 
 
@@ -239,17 +242,19 @@ end
     
 def main() 
 
-    # check auth is ok 
-    verify_config_auth( CONFIG['auth'] )
+  # set up the db and make sure we can connect 
+  setup_db( CONFIG['connection'], CONFIG['auth'] )
+
+#  # check auth is ok 
+#  verify_config_auth( CONFIG['auth'] )
+
+  exit 1 
 
     # generate lists of files we need to verify and or publish
     verify_files  = []
     publish_files = []
     verify_files = find_files( CONFIG['verify'] ) unless CONFIG['verify'].nil?
     publish_files = find_files( CONFIG['do_hash'] ) unless CONFIG['do_hash'].nil?
-
-    # create the mongo connection
-    setup_db    
 
     # publish the hasehes we have found
     generate_hash( publish_files ) unless publish_files.empty?
