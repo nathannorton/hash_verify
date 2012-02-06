@@ -1,0 +1,2 @@
+* add pid file and locking so 2 runs can not overlap
+
