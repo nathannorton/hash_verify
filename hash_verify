@@ -1,17 +1,10 @@
 #!/usr/bin/env ruby
-
 # 
 # This app will read a config file, check that it is valid,
 # and if so will get the hash of all files defined in the 
 # config. Once hashes have been generated it will
 # then push them to a mongo instance that we can query
-# from there. 
-#
-#
-# TODO: Does not differentiate between text and binary files yet. 
-# TODO: make authentication work
-# TODO: need to do exception checking on all file system calls
-# TODO: make sure we van not verify against a file we put in the db
+# from there and perform an action against the verified data. 
 
 require 'rubygems'
 require 'digest/md5'
@@ -26,7 +19,7 @@ require 'pp'
 
 
 # buffer for maximum size to chunk the hashing, in order to not 
-# kill my  machine by loading a many gig files into memory
+# kill my  machine by loading a many gig file into memory
 $BUF = 1024 * 1024 * 1024
 
 CONFIG = YAML.load_file("/etc/hash_verify/hash_verify.conf") unless defined? CONFIG

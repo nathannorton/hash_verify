@@ -1,2 +1,6 @@
 * add pid file and locking so 2 runs can not overlap
-
+* Does not differentiate between text and binary files yet. 
+* make authentication work
+* need to do exception checking on all file system calls
+* make sure we can not verify against a file we put in the db
+* 
