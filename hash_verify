@@ -48,70 +48,68 @@ def setup_db( opts, auth )
     unless db.authenticate(username,password) 
 
   @collection = db.collection( collection )
+  db.strict = true 
 end
 
 
-# publish the hash to the web service
-# Currently I am just using a mongodb instance
-# to see how it goes...
 def publish_hash( hash, filename )
-    doc = { "path" => filename,
-            "host" => Socket.gethostname.split(".")[0],
-            "date" => Time.now,
-            "hash" => hash}
-    @collection.insert( doc ) 
-    puts "The following file has been added to the hash collection: #{filename}"
+  doc = { "path" => filename,
+          "host" => Socket.gethostname.split(".")[0],
+          "date" => Time.now,
+          "hash" => hash}
+  @collection.insert( doc ) 
+  puts "The following file has been added to the hash collection: #{filename}"
 end
 
-# check values in mongodb
+
 def check_values( file )
-    @collection.find( "path" => file).each {|row| return true}
-    return false
+  @collection.find( "path" => file).each {|row| return true}
+  return false
 end
+
 
 # takes a list of files and verifys them
 # TODO: complete verify stuff
 def verify_hash( files, action )
-    files.each do |f|
-        # do action here if it is verified
-        pub = convert_to_local_pub(f)
-        if check_values(pub) and  different_host?(pub)
-            case action
-                when "delete" then 
-                    File.delete f 
-                    puts "The following file has been deleted: #{f}!"
-                    # if last file in directory remove remove the directory...
-                    if (Dir.entries( File.dirname( f ) ) - %w{ .  .. } ).empty?
-                        puts "dir is empty deleting #{File.dirname(f)}"
-                        Dir.delete(File.dirname(f))
-                    end 
-            end
+  files.each do |f|
+    # do action here if it is verified
+    pub = convert_to_local_pub(f)
+    if check_values(pub) and  different_host?(pub)
+      case action
+        when "delete" then 
+          File.delete f 
+          puts "The following file has been deleted: #{f}!"
+          # if last file in directory remove remove the directory...
+          if (Dir.entries( File.dirname( f ) ) - %w{ .  .. } ).empty?
+            puts "dir is empty deleting #{File.dirname(f)}"
+            Dir.delete(File.dirname(f))
+          end 
         end
     end
+  end
 end
 
 # check that the host name we are verifying is not the same as the one that 
 # generated the hash value. This is more a sanity check so we dont accidently
 # delete files from the source
 def different_host?( fn )
-    hn = Socket.gethostname.split(".")[0]
-    @collection.find( "path" => fn, "host" => hn ).each {|row| return false}
-    return true
+  hn = Socket.gethostname.split(".")[0]
+  @collection.find( "path" => fn, "host" => hn ).each {|row| return false}
+  return true
 end
 
 
 # convert a data directory to a local pub location string 
 def convert_to_local_pub( path )
+  # strip out all but the last part of the file 
+  # /data/market/20111101/20111101-any.zblock
+  # /pubfs/pub/data/shopping/location4/20110528/20110528-any.block.file
+  res = path.split("/").last(2)
     
-    # strip out all but the last part of the file 
-    # /data/market/20111101/20111101-any.zblock
-    # /pubfs/pub/data/shopping/location4/20110528/20110528-any.block.file
-    res = path.split("/").last(2)
-    
-    hostname = Socket.gethostname.split(".")[0]
-    local   = "/local/pub/data/krx/market/"
+  hostname = Socket.gethostname.split(".")[0]
+  local   = "/local/pub/data/krx/market/"
      
-    full = "#{local}#{hostname}/#{res.join("/")}"
+  full = "#{local}#{hostname}/#{res.join("/")}"
 end 
 
 
@@ -120,18 +118,17 @@ end
 # and returns a string of the hashed contents
 # file_h = Digest::SHA2.new <- can also use sha2 if wanted..
 def generate_hash( file_list ) 
-    file_list.each do |path|
-        unless check_values( path ) 
-            file_h = Digest::MD5.new
-            File.open(path, 'rb') do |fh|
-                while buffer = fh.read($BUF)
-                    file_h.update( buffer )
-                end
-            end
-            publish_hash( file_h.to_s, path )
+  file_list.each do |path|
+    unless check_values( path ) 
+      file_h = Digest::MD5.new
+      File.open(path, 'rb') do |fh|
+        while buffer = fh.read($BUF)
+          file_h.update( buffer )
         end
+      end
+      publish_hash( file_h.to_s, path )
     end
-
+  end
 end
 
 # this will trawl the files listed in the config 
@@ -145,30 +142,28 @@ end
 #           - will do only the listed file 
 # NOTE: symlinks are skipped
 def find_files( config )
-    files = []
-    config.each do |c|
-        raise "Config error" unless  verify_config_dirs( c )
-        dir = c["directory"].chomp("/")
-        rec = convert_yaml_bools( c["recursive"] ) 
+  files = []
+  config.each do |c|
+    dir = c["directory"].chomp("/")
+    recursive = convert_yaml_bools( c["recursive"] ) 
     
-    
-        if File.directory? dir 
-            if rec == false
-                Dir.glob( "#{dir}/*" ).each do |d|
-                    files << d unless File.directory? d or File.symlink? d
-                end
-            else
-                Dir.glob("#{dir}/**/*").each do |d|
-                    files << d unless File.directory? d or File.symlink? d 
-                end        
-            end
-        else
-            Dir.glob( dir ).each do |d|
-                files << d  
-            end
+    if File.directory? dir 
+      unless recursive
+        Dir.glob( "#{dir}/*" ).each do |d|
+          files << d unless File.directory? d or File.symlink? d
         end
+      else
+        Dir.glob("#{dir}/**/*").each do |d|
+          files << d unless File.directory? d or File.symlink? d 
+        end        
+      end
+    else
+      Dir.glob( dir ).each do |d|
+        files << d  
+      end
     end
-    files
+  end
+  files
 end
 
 def clean_yaml( yaml )
@@ -178,14 +173,14 @@ def clean_yaml( yaml )
 end
 
 # in yaml: "y" "Y" "n" "N" get converted to strings 
-# not boolsi. "yes" "no" however do get passed as  bools 
+# not bools. "yes" "no" however do get passed as  bools 
 def convert_yaml_bools( str ) 
-    str.downcase! if str.class == String
+  str.downcase! if str.class == String
 
-    return true  if str.eql? "y"
-    return false if str.eql? "n"
+  return true  if str.eql? "y"
+  return false if str.eql? "n"
 
-    str
+  str
 end
 
 
@@ -198,7 +193,10 @@ def verify_config_dirs( option )
 
   rec = convert_yaml_bools( rec ) 
 
-  raise "Recursive field in config is not either \"y\" or \"n\"" unless rec.class == Bool
+  bool = false
+  bool = true if rec.class == TrueClass or rec.class == FalseClass 
+
+  raise "Recursive field in config is not either \"y\" or \"n\"" unless bool
   raise "You have specified a file that does not exist, exiting" unless File.file? dir or File.directory? dir
   raise "You have selected recursive in the config, however you supplied a normal file, exiting" if rec and File.file? dir
 
@@ -217,7 +215,6 @@ end
     
 def main() 
   clean_yaml( CONFIG )
-  pp CONFIG
 
   # set up the db and make sure we can connect 
   setup_db( CONFIG['connection'], CONFIG['auth'] )
@@ -226,20 +223,16 @@ def main()
   verify_files  = []
   publish_files = []
  
-  #verify_files = find_files( CONFIG['verify'] ) unless CONFIG['verify'].nil?
-  #publish_files = find_files( CONFIG['do_hash'] ) unless CONFIG['do_hash'].nil?
-
-  exit 1
+  verify_files = find_files( CONFIG['verify'] ) unless CONFIG['verify'].nil?
+  publish_files = find_files( CONFIG['do_hash'] ) unless CONFIG['do_hash'].nil?
 
   # publish the hasehes we have found
   generate_hash( publish_files ) unless publish_files.empty?
     
-  # verify the local hashes to what we have in th edb
+  # verify the local hashes to what we have in the db
   # make sure action is not nil... 
   verify_hash( verify_files, @action )  unless verify_files.empty?
-
 end
 
 
 main if __FILE__ == $0 
-
