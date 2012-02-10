@@ -4,3 +4,4 @@
 * need to do exception checking on all file system calls
 * make sure we can not verify against a file we put in the db
 * 
+*  make sure adding hash will check if has not exists and also not changed if already there 

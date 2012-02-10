@@ -7,87 +7,81 @@
 # from there and perform an action against the verified data. 
 
 require 'rubygems'
-require 'digest/md5'
 require 'yaml'
-require "socket"
 require 'find'
 require 'fileutils'
-require 'mongo'
-require 'bson'
 
 require 'pp'
 
-
-# buffer for maximum size to chunk the hashing, in order to not 
-# kill my  machine by loading a many gig file into memory
-$BUF = 1024 * 1024 * 1024
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), 'lib')
+require 'hasher.rb'
+require 'database.rb'
 
 CONFIG = YAML.load_file("/etc/hash_verify/hash_verify.conf") unless defined? CONFIG
 
 
-# set up the mongo DB connection, use defaults if 
-# the connection details in the config file are not set
-def setup_db( opts, auth ) 
-  port       = ( true && opts['port'] )       || 27017
-  server     = ( true && opts['server'] )     || 'localhost'
-  database   = ( true && opts['database'] )   || 'hash_verify'
-  collection = ( true && opts['collection'] ) || 'hashes'
-
-  username   = ( true && auth['username'] ) || 'hash_verify' 
-  password   = ( true && auth['password'] ) || 'hash_password'
-  
-  db = Mongo::Connection.new( server, port ).db( database )
-  raise "Failed to authenticate against the db" \
-    unless db.authenticate(username,password) 
-
-  @collection = db.collection( collection )
-  db.strict = true 
-end
-
-
-def publish_hash( hash, filename )
-  doc = { "path" => filename,
-          "host" => Socket.gethostname.split(".")[0],
-          "date" => Time.now,
-          "hash" => hash}
-  @collection.insert( doc ) 
-  puts "The following file has been added to the hash collection: #{filename}"
-end
-
-
-def check_values( file )
-  @collection.find( "path" => file).each {|row| return true}
-  return false
-end
-
-
-# takes a list of files and verifys them
-# TODO: complete verify stuff
 def verify_hash( files, action )
   files.each do |f|
-    # do action here if it is verified
-    pub = convert_to_local_pub(f)
-    if check_values(pub) and  different_host?(pub)
-      case action
-        when "delete" then 
-          File.delete f 
-          puts "The following file has been deleted: #{f}!"
-          # if last file in directory remove remove the directory...
-          if (Dir.entries( File.dirname( f ) ) - %w{ .  .. } ).empty?
-            puts "dir is empty deleting #{File.dirname(f)}"
-            Dir.delete(File.dirname(f))
-          end 
-        end
+    case action
+      when "delete" then 
+        verify_hash_action_delete( f ) 
+      when "notify" then 
+        verify_hash_action_notify( f ) 
+      when "none" then 
+        verify_hash_action_none( f ) 
+      when "script" then 
+        verify_hash_action_script( f )       
     end
   end
+end
+
+def verify_hash_action_none( file ) 
+  puts "Just sitting here looking inconspicuous"
+end 
+
+def verify_hash_action_delete( file )
+  pub = convert_to_local_pub( file )
+
+  if check_values( pub ) and  different_host?( pub )
+    File.delete file
+    puts "The following file has been deleted: #{f}!"
+
+    if (Dir.entries( File.dirname( file ) ) - %w{ .  .. } ).empty?
+      puts "dir is empty deleting #{File.dirname( file )}"
+      Dir.delete(File.dirname( file ))
+    end
+  end
+end
+
+def verify_hash_action_script( file ) 
+  
+end 
+
+# TODO: redo check if the different hashing algos are used !!
+# possibly send an email to notify 
+def verify_hash_action_notify( file )
+  hash = @hasher.generate_hash( file )
+  res  = @dbase.search_hashes( file ) 
+
+  unless hash.to_s.eql?( res["hash"]  ) 
+    
+    puts "Host:\t\t#{res["host"]}"
+    puts "File:\t\t#{file}"
+    puts "Database date:\t#{res["date"]}"
+    puts "Current date:\t#{Time.now}"
+    puts "Old hash:\t#{res["algo"]},\t#{res["hash"]}"
+    puts "New hash:\t#{@hasher.algo},\t#{hash.to_s}"
+    puts ""
+    
+  end
+
 end
 
 # check that the host name we are verifying is not the same as the one that 
 # generated the hash value. This is more a sanity check so we dont accidently
 # delete files from the source
-def different_host?( fn )
-  hn = Socket.gethostname.split(".")[0]
-  @collection.find( "path" => fn, "host" => hn ).each {|row| return false}
+def different_host?( path )
+  @collection.find( "path" => path, "host" => @hostname ).each {|row| return false}
   return true
 end
 
@@ -99,30 +93,11 @@ def convert_to_local_pub( path )
   # /pubfs/pub/data/shopping/location4/20110528/20110528-any.block.file
   res = path.split("/").last(2)
     
-  hostname = Socket.gethostname.split(".")[0]
   local   = "/local/pub/data/krx/market/"
      
-  full = "#{local}#{hostname}/#{res.join("/")}"
+  full = "#{local}#{@hostname}/#{res.join("/")}"
 end 
 
-
-# the actual hashing method:
-# accepts the filepath (full absolute path)
-# and returns a string of the hashed contents
-# file_h = Digest::SHA2.new <- can also use sha2 if wanted..
-def generate_hash( file_list ) 
-  file_list.each do |path|
-    unless check_values( path ) 
-      file_h = Digest::MD5.new
-      File.open(path, 'rb') do |fh|
-        while buffer = fh.read($BUF)
-          file_h.update( buffer )
-        end
-      end
-      publish_hash( file_h.to_s, path )
-    end
-  end
-end
 
 # this will trawl the files listed in the config 
 # files. 
@@ -137,6 +112,8 @@ end
 def find_files( config )
   files = []
   config.each do |c|
+    verify_config_dirs( c )
+
     dir = c["directory"].chomp("/")
     recursive = convert_yaml_bools( c["recursive"] ) 
     
@@ -193,7 +170,7 @@ def verify_config_dirs( option )
   raise "You have specified a file that does not exist, exiting" unless File.file? dir or File.directory? dir
   raise "You have selected recursive in the config, however you supplied a normal file, exiting" if rec and File.file? dir
 
-  valid_actions = ['delete','none','script']
+  valid_actions = ['delete','none','script','notify']
   unless act.nil?
     raise "action is not valid" unless valid_actions.include? act
     @action = act
@@ -205,25 +182,34 @@ def verify_config_dirs( option )
   raise "Invalid config file, plese check and try again"
 end
 
+def setup_variables #( config ) 
+  @dbase = Database
+
+  @hasher = Hasher
+  @hasher.algo = Digest::SHA2
+
+end
     
 def main() 
+  setup_variables()
+
   clean_yaml( CONFIG )
 
   # set up the db and make sure we can connect 
-  setup_db( CONFIG['connection'], CONFIG['auth'] )
+  @dbase.setup_db(  CONFIG['connection'], CONFIG['auth'] ) 
 
   # generate lists of files we need to verify and or publish
   verify_files  = []
   publish_files = []
- 
+
   verify_files = find_files( CONFIG['verify'] ) unless CONFIG['verify'].nil?
   publish_files = find_files( CONFIG['do_hash'] ) unless CONFIG['do_hash'].nil?
 
-  # publish the hasehes we have found
-  generate_hash( publish_files ) unless publish_files.empty?
+  # publish the hashes we have found
+  hashes = @hasher.generate_hashes( publish_files ) unless publish_files.empty?
+  @dbase.publish_hashes( hashes ) 
     
   # verify the local hashes to what we have in the db
-  # make sure action is not nil... 
   verify_hash( verify_files, @action )  unless verify_files.empty?
 end
 
