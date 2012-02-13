@@ -13,7 +13,7 @@ require 'fileutils'
 
 require 'pp'
 
-$LOAD_PATH.unshift File.join(File.dirname(__FILE__), 'lib')
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), '../lib')
 require 'hasher.rb'
 require 'database.rb'
 
@@ -85,18 +85,6 @@ def different_host?( path )
   return true
 end
 
-
-# convert a data directory to a local pub location string 
-def convert_to_local_pub( path )
-  # strip out all but the last part of the file 
-  # /data/market/20111101/20111101-any.zblock
-  # /pubfs/pub/data/shopping/location4/20110528/20110528-any.block.file
-  res = path.split("/").last(2)
-    
-  local   = "/local/pub/data/krx/market/"
-     
-  full = "#{local}#{@hostname}/#{res.join("/")}"
-end 
 
 
 # this will trawl the files listed in the config 
