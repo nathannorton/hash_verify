@@ -16,6 +16,7 @@ require 'pp'
 $LOAD_PATH.unshift File.join(File.dirname(__FILE__), '../lib')
 require 'hasher.rb'
 require 'database.rb'
+require 'config.rb'
 
 CONFIG = YAML.load_file("/etc/hash_verify/hash_verify.conf") unless defined? CONFIG
 
@@ -36,13 +37,14 @@ def verify_hash( files, action )
 end
 
 def verify_hash_action_none( file ) 
-  puts "Just sitting here looking inconspicuous"
+  puts "Just sitting here looking sexy"
 end 
 
 def verify_hash_action_delete( file )
-  pub = convert_to_local_pub( file )
+  pub = file 
+  pub = convert_to_local_pub( file ) if 
 
-  if check_values( pub ) and  different_host?( pub )
+  if check_values( pub ) and  @dbase.different_host?( pub )
     File.delete file
     puts "The following file has been deleted: #{f}!"
 
@@ -56,6 +58,22 @@ end
 def verify_hash_action_script( file ) 
   
 end 
+
+
+# convert a data directory to a local pub location string 
+def convert_to_local_pub( path )
+  return path unless @transform 
+
+  # strip out all but the last part of the file 
+  # /data/market/20111101/20111101-any.zblock
+  # /pubfs/pub/data/shopping/location4/20110528/20110528-any.block.file
+  res = path.split("/").last(2)
+  
+  local = @transform
+  
+  full = "#{local}#{@hostname}/#{res.join("/")}"
+end 
+
 
 # TODO: redo check if the different hashing algos are used !!
 # possibly send an email to notify 
@@ -77,15 +95,6 @@ def verify_hash_action_notify( file )
 
 end
 
-# check that the host name we are verifying is not the same as the one that 
-# generated the hash value. This is more a sanity check so we dont accidently
-# delete files from the source
-def different_host?( path )
-  @collection.find( "path" => path, "host" => @hostname ).each {|row| return false}
-  return true
-end
-
-
 
 # this will trawl the files listed in the config 
 # files. 
@@ -100,10 +109,10 @@ end
 def find_files( config )
   files = []
   config.each do |c|
-    verify_config_dirs( c )
+    Config.verify_config_dirs( c )
 
     dir = c["directory"].chomp("/")
-    recursive = convert_yaml_bools( c["recursive"] ) 
+    recursive = Config.convert_yaml_bools( c["recursive"] ) 
     
     if File.directory? dir 
       unless recursive
@@ -124,64 +133,20 @@ def find_files( config )
   files
 end
 
-def clean_yaml( yaml )
-  raise "Connection setting no in config" unless yaml['connection']
-  raise "Auth section not in config " unless yaml['auth']
-  raise "Either action not in config" unless yaml['do_hash'] or yaml['verify'] 
-end
-
-# in yaml: "y" "Y" "n" "N" get converted to strings 
-# not bools. "yes" "no" however do get passed as  bools 
-def convert_yaml_bools( str ) 
-  str.downcase! if str.class == String
-
-  return true  if str.eql? "y"
-  return false if str.eql? "n"
-
-  str
-end
-
-
-# Check the config is using a relatively sane 
-# set of values that will not break the script.
-def verify_config_dirs( option )
-  dir = option['directory']
-  rec = option['recursive']
-  act = option['action']
-
-  rec = convert_yaml_bools( rec ) 
-
-  bool = false
-  bool = true if rec.class == TrueClass or rec.class == FalseClass 
-
-  raise "Recursive field in config is not either \"y\" or \"n\"" unless bool
-  raise "You have specified a file that does not exist, exiting" unless File.file? dir or File.directory? dir
-  raise "You have selected recursive in the config, however you supplied a normal file, exiting" if rec and File.file? dir
-
-  valid_actions = ['delete','none','script','notify']
-  unless act.nil?
-    raise "action is not valid" unless valid_actions.include? act
-    @action = act
-  end
-
-  return true if rec == false and File.directory? dir
-  return true if rec == false and File.file? dir 
-  return true if rec and File.directory? dir
-  raise "Invalid config file, plese check and try again"
-end
-
 def setup_variables #( config ) 
   @dbase = Database
 
   @hasher = Hasher
   @hasher.algo = Digest::SHA2
 
+  @transform = Config.check_transform( CONFIG ) 
+
 end
     
 def main() 
   setup_variables()
 
-  clean_yaml( CONFIG )
+  Config.clean_yaml( CONFIG )
 
   # set up the db and make sure we can connect 
   @dbase.setup_db(  CONFIG['connection'], CONFIG['auth'] ) 

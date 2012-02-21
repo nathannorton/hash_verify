@@ -7,6 +7,12 @@ module Config
 	  raise "Either action not in config" unless yaml['do_hash'] or yaml['verify'] 
 	end
 	
+  # check if there is a transform for pub 
+  def self.check_transform( yaml )
+    transform = yaml['general']['pub_dir'] unless yaml['general']['pub_dir']
+  end
+
+
 	# in yaml: "y" "Y" "n" "N" get converted to strings 
 	# not bools. "yes" "no" however do get passed as  bools 
 	def self.convert_yaml_bools( str ) 
