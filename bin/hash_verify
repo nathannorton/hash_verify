@@ -92,7 +92,6 @@ def verify_hash_action_notify( file )
     puts ""
     
   end
-
 end
 
 
@@ -157,13 +156,13 @@ def main()
 
   verify_files = find_files( CONFIG['verify'] ) unless CONFIG['verify'].nil?
   publish_files = find_files( CONFIG['do_hash'] ) unless CONFIG['do_hash'].nil?
-
+  
   # publish the hashes we have found
   hashes = @hasher.generate_hashes( publish_files ) unless publish_files.empty?
   @dbase.publish_hashes( hashes ) 
-    
+  
   # verify the local hashes to what we have in the db
-  verify_hash( verify_files, @action )  unless verify_files.empty?
+  verify_hash( verify_files, Config.action )  unless verify_files.empty?
 end
 
 

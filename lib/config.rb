@@ -1,6 +1,8 @@
 
 module Config
 
+  class << self; attr_reader :action; end
+
 	def self.clean_yaml( yaml )
 	  raise "Connection setting no in config" unless yaml['connection']
 	  raise "Auth section not in config " unless yaml['auth']
