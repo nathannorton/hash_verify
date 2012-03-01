@@ -1,6 +1,3 @@
-
-module HashVerify
-  include 'lib/hasher.rb'
-  include 'lib/config.rb'
-  include 'lib/database.rb'
-end
+require 'hash_verify/hasher.rb'
+require 'hash_verify/config.rb'
+require 'hash_verify/database.rb'
