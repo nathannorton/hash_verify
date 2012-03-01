@@ -37,12 +37,11 @@ def verify_hash( files, action )
 end
 
 def verify_hash_action_none( file ) 
-  puts "Just sitting here looking sexy"
+  puts "nul action, on file #{file}"
 end 
 
 def verify_hash_action_delete( file )
-  pub = file 
-  pub = convert_to_local_pub( file ) if 
+  pub = convert_to_local_pub( file ) 
 
   if check_values( pub ) and  @dbase.different_host?( pub )
     File.delete file
@@ -56,11 +55,13 @@ def verify_hash_action_delete( file )
 end
 
 def verify_hash_action_script( file ) 
-  
+  puts "TODO:  stub"  
 end 
 
 
 # convert a data directory to a local pub location string 
+# usefule for cases where the fiels are baced up to a remote machine
+# and the path gets modified along the way
 def convert_to_local_pub( path )
   return path unless @transform 
 
@@ -132,7 +133,7 @@ def find_files( config )
   files
 end
 
-def setup_variables #( config ) 
+def setup_variables() 
   @dbase = Database
 
   @hasher = Hasher
