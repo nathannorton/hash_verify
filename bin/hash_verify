@@ -14,9 +14,11 @@ require 'fileutils'
 require 'pp'
 
 $LOAD_PATH.unshift File.join(File.dirname(__FILE__), '../lib')
-require 'hasher.rb'
-require 'database.rb'
-require 'config.rb'
+#require 'hasher.rb'
+#require 'database.rb'
+#require 'config.rb'
+require 'hashverify.rb'
+
 
 CONFIG = YAML.load_file("/etc/hash_verify/hash_verify.conf") unless defined? CONFIG
 
