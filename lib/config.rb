@@ -11,7 +11,9 @@ module Config
 	
   # check if there is a transform for pub 
   def self.check_transform( yaml )
-    transform = yaml['general']['pub_dir'] unless yaml['general']['pub_dir']
+    if yaml['general']
+      transform = yaml['general']['pub_dir'] unless yaml['general']['pub_dir']
+    end
   end
 
 
