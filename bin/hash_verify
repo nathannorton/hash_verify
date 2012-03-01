@@ -6,18 +6,12 @@
 # then push them to a mongo instance that we can query
 # from there and perform an action against the verified data. 
 
-require 'rubygems'
 require 'yaml'
 require 'find'
 require 'fileutils'
 
-require 'pp'
-
-$LOAD_PATH.unshift File.join(File.dirname(__FILE__), '../lib')
-#require 'hasher.rb'
-#require 'database.rb'
-#require 'config.rb'
-require 'hashverify.rb'
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+require 'hash_verify'
 
 
 CONFIG = YAML.load_file("/etc/hash_verify/hash_verify.conf") unless defined? CONFIG
