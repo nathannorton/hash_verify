@@ -2,7 +2,7 @@
 require 'rubygems' 
 require 'socket'
 require 'bson'
-require 'bson-ext'
+require 'bson_ext'
 require 'mongo' 
 
 
