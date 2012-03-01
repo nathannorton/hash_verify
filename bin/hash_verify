@@ -131,6 +131,7 @@ end
 
 def setup_variables() 
   raise "Config file not found" if CONFIG.nil?
+  raise "Config file not filled out" unless CONFIG
 
   @dbase = Database
 
