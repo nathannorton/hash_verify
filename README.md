@@ -11,7 +11,7 @@ I have created a spec file so you can build this as an rpm.
 
 Using Hash Verify
 ===
-Once installed you will be left with a binary "hash_verify", a config file in /etc/hash_verify/hash_verify.conf. and a cron entry. You can change the run time in the cron entry to enable multiple runs a day for example. The config file is quite well documented with varius use cases described in there. 
+Once installed you will be left with a binary "hash_verify", a config file in /etc/hash_verify/hash_verify.conf. and a cron entry. You can change the run time in the cron entry to enable multiple runs a day for example. The config file is quite well documented with varius use cases described in there. This application has run for a couple of months on both redhat enterprise 5 and 6 without any issues at all. 
 
 Set up Mongo
 ===
