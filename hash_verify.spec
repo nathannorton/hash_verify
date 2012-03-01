@@ -42,7 +42,7 @@ install -m0644 lib/database.rb %{buildroot}%{ruby_sitelib}/hash_verify/database.
 install -m0644 lib/config.rb %{buildroot}%{ruby_sitelib}/hash_verify/config.rb
 install -m0644 lib/hasher.rb %{buildroot}%{ruby_sitelib}/hash_verify/hasher.rb
 
-
+mkdir -p %{buildroot}%{_sysconfdir}/hash_verify/
 install -p -d -m755 $RPM_BUILD_ROOT%{binlocaldir}/
 install -m700 bin/hash_verify $RPM_BUILD_ROOT%{binlocaldir}/
 install -Dp -m0640 conf/hash_verify.conf %{buildroot}%{_sysconfdir}/hash_verify/
@@ -58,8 +58,9 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %{binlocaldir}/hash_verify
-%config %{_sysconfdir}/hash_verify.conf
+%config %{_sysconfdir}/hash_verify/hash_verify.conf
 %{_sysconfdir}/cron.d/hash_verify
+%{ruby_sitelib}/hash_verify.rb
 %{ruby_sitelib}/hash_verify/*
 
 
