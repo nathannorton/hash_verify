@@ -57,7 +57,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{binlocaldir}/hash_verify
 %config %{_sysconfdir}/hash_verify.conf
-%{_sysconfdir}/cron.d/haash_verify
+%{_sysconfdir}/cron.d/hash_verify
 %{ruby_sitelib}/hash_verify/*
 
 
