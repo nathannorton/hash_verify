@@ -157,9 +157,11 @@ def main()
   publish_files = find_files( CONFIG['do_hash'] ) unless CONFIG['do_hash'].nil?
   
   # publish the hashes we have found
-  hashes = @hasher.generate_hashes( publish_files ) unless publish_files.empty?
-  @dbase.publish_hashes( hashes ) 
-  
+  publish_files.each do |fn|
+    hash = @hasher.generate_hash( fn ) unless @dbase.contains?( fn )
+    @dbase.publish_hashes( hash ) unless @dbase.contains?( fn ) 
+  end
+
   # verify the local hashes to what we have in the db
   verify_hash( verify_files, Config.action )  unless verify_files.empty?
 end
