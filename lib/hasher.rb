@@ -27,7 +27,7 @@ module Hasher
 
   def self.generate_hash( file ) 
     return generate_hash_md5( file )  if @algo == Digest::MD5 
-    return generate_hash_sha2( file ) if @algo == Digest::SHA2    
+    return generate_hash_sha2( file ) if @algo == Digest::SHA256
   end
 
   def self.generate_hash_md5( file )
@@ -41,7 +41,7 @@ module Hasher
   end
 
   def self.generate_hash_sha2( file )
-    file_h = Digest::SHA2.new
+    file_h = Digest::SHA256.new
     File.open(file, 'rb') do |fh|
       while buffer = fh.read($BUF)
         file_h.update( buffer )

@@ -136,7 +136,7 @@ def setup_variables()
   @dbase = Database
 
   @hasher = Hasher
-  @hasher.algo = Digest::SHA2
+  @hasher.algo = Digest::SHA256
 
   @transform = Config.check_transform( CONFIG ) 
 end
