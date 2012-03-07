@@ -3,8 +3,8 @@
 
 Name: hash_verify
 Summary: Genaerate hashes of files and publish them to a mongo instance
-Version: 1.0
-Release: 17%{org_tag}%{dist}
+Version: 1.1
+Release: 0%{org_tag}%{dist}
 Group: Applications/Internet
 License: GPL
 Source: hash_verify.tar.gz
