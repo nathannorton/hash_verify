@@ -4,7 +4,7 @@
 Name: hash_verify
 Summary: Genaerate hashes of files and publish them to a mongo instance
 Version: 1.1
-Release: 0%{org_tag}%{dist}
+Release: 4%{org_tag}%{dist}
 Group: Applications/Internet
 License: GPL
 Source: hash_verify.tar.gz
@@ -65,5 +65,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Apr 17 2012 Nathan Norton <nathan@example.com> - 1.1
+- some delete action fixes
 * Thu Mar 01 2012 Nathan Norton <nathan@example.com> - 1.0
 - initial spec file
