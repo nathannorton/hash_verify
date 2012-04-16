@@ -39,7 +39,7 @@ end
 def verify_hash_action_delete( file )
   pub = convert_to_local_pub( file ) 
 
-  if @dbase.check_values( pub ) and  @dbase.different_host?( pub )
+  if @dbase.contains?( pub ) and  @dbase.different_host?( pub )
     File.delete file
     puts "The following file has been deleted: #{f}!"
 
