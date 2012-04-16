@@ -63,7 +63,7 @@ module Database
     return false
   end
 
-  def different_host?( path )
+  def self.different_host?( path )
     @collection.find( "path" => path, "host" => @hostname ).each {|row| return false}
     return true
   end

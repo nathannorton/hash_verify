@@ -39,7 +39,7 @@ end
 def verify_hash_action_delete( file )
   pub = convert_to_local_pub( file ) 
 
-  if check_values( pub ) and  @dbase.different_host?( pub )
+  if @dbase.check_values( pub ) and  @dbase.different_host?( pub )
     File.delete file
     puts "The following file has been deleted: #{f}!"
 
@@ -159,7 +159,7 @@ def main()
   # publish the hashes we have found
   publish_files.each do |fn|
     hash = @hasher.generate_hash( fn ) unless @dbase.contains?( fn )
-    @dbase.publish_hashes( hash ) unless @dbase.contains?( fn ) 
+    @dbase.publish_hash( hash, fn ) unless @dbase.contains?( fn ) 
   end
 
   # verify the local hashes to what we have in the db
