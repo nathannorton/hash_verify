@@ -63,6 +63,11 @@ module Database
     return false
   end
 
+  def self.check_in_pub?( path )
+    @collection.find( "path" => path ).each {|row| return true } 
+    return false
+  end
+
   def self.different_host?( path )
     @collection.find( "path" => path, "host" => @hostname ).each {|row| return false}
     return true
