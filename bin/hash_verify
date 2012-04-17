@@ -33,13 +33,16 @@ def verify_hash( files, action )
 end
 
 def verify_hash_action_none( file ) 
-  puts "nul action, on file #{file}"
+  puts "null action, on file #{file}"
 end 
 
 def verify_hash_action_delete( file )
   pub = convert_to_local_pub( file ) 
 
-  if @dbase.check_in_pub?( pub ) and  @dbase.different_host?( pub )
+  # get the hash so we can compare
+  hash = @hasher.generate_hash( file )
+
+  if @dbase.check_in_pub?( pub, hash ) and  @dbase.different_host?( pub )
     File.delete file
     puts "The following file has been deleted: #{file}!"
 

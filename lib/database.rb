@@ -1,4 +1,5 @@
 
+require 'pp'
 require 'rubygems' 
 require 'socket'
 require 'bson'
@@ -63,8 +64,15 @@ module Database
     return false
   end
 
-  def self.check_in_pub?( path )
-    @collection.find( "path" => path ).each {|row| return true } 
+  def self.check_in_pub?( path, hash )
+    @collection.find( "path" => path ).each do |row|
+      pp row
+      pp hash
+      pp row.hash
+      if hash.eql? row.hash 
+        return true
+      end
+    end
     return false
   end
 
