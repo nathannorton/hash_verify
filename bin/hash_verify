@@ -41,7 +41,7 @@ def verify_hash_action_delete( file )
 
   if @dbase.check_in_pub?( pub ) and  @dbase.different_host?( pub )
     File.delete file
-    puts "The following file has been deleted: #{f}!"
+    puts "The following file has been deleted: #{file}!"
 
     if (Dir.entries( File.dirname( file ) ) - %w{ .  .. } ).empty?
       puts "dir is empty deleting #{File.dirname( file )}"

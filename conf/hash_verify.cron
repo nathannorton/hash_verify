@@ -1,3 +1,3 @@
 # cron file for hashi 
 # probably run this at 6am every morning 
-0 6 * * * root /etc/local/bin/hash_verify 
+30 22 * * * root /etc/local/bin/hash_verify 
