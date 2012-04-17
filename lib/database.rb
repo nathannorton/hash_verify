@@ -66,10 +66,7 @@ module Database
 
   def self.check_in_pub?( path, hash )
     @collection.find( "path" => path ).each do |row|
-      pp row
-      pp hash
-      pp row.hash
-      if hash.eql? row.hash 
+      if hash.to_s.eql? row.hash.to_s 
         return true
       end
     end

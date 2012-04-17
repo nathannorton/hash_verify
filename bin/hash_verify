@@ -9,6 +9,7 @@
 require 'yaml'
 require 'find'
 require 'fileutils'
+require 'socket'
 
 $LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 require 'hash_verify'
@@ -64,14 +65,17 @@ end
 def convert_to_local_pub( path )
   return path unless @transform 
 
+  hostname = Socket.gethostname.split(".")[0]
+
   # strip out all but the last part of the file 
   # /data/market/20111101/20111101-any.zblock
   # /pubfs/pub/data/shopping/location4/20110528/20110528-any.block.file
   res = path.split("/").last(2)
   
-  local = @transform
+  local = @transform.chomp('/')
+  local += '/'
   
-  full = "#{local}#{@hostname}/#{res.join("/")}"
+  full = "#{local}#{hostname}/#{res.join("/")}"
 end 
 
 
